@@ -15,7 +15,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
-        // Override point for customization after application launch.
+
+        // if we've never set the settings, initialize them with the demo keys here
+        if (NSUserDefaults.standardUserDefaults().objectForKey("appID") == nil) {
+            NSUserDefaults.standardUserDefaults().setObject("519d53101386202089000007", forKey: "appID")
+            NSUserDefaults.standardUserDefaults().setObject("fPQbB9AQanBQsabRhQW27HKYfpwgkqsO", forKey: "accessToken")
+            NSUserDefaults.standardUserDefaults().synchronize()
+        }
+
         return true
     }
 

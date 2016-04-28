@@ -10,17 +10,25 @@ import UIKit
 
 class SettingsViewController: UIViewController {
     
-    @IBOutlet weak var appIdLabel: UITextField!
-    @IBOutlet weak var apiKeyLabel: UITextField!
+    @IBOutlet weak var appIdField: UITextField!
+    @IBOutlet weak var accessTokenField: UITextField!
     
-    @IBAction func goBack(sender: UIButton) {
-        print("going back")
-        self.navigationController?.popViewControllerAnimated(true)
+    override func viewWillAppear(animated: Bool) {
+        
+        if let appID = NSUserDefaults.standardUserDefaults().objectForKey("appID") {
+            self.appIdField.text = appID as? String
+        }
+        
+        if let accessToken = NSUserDefaults.standardUserDefaults().objectForKey("accessToken") {
+            self.accessTokenField.text = accessToken as? String
+        }
     }
     
     @IBAction func saveSettings(sender: UIButton) {
-        print(self.appIdLabel.text)
-        print(self.apiKeyLabel.text)
+        NSUserDefaults.standardUserDefaults().setObject(self.appIdField.text, forKey: "appID")
+        NSUserDefaults.standardUserDefaults().setObject(self.accessTokenField.text, forKey: "accessToken")
+        NSUserDefaults.standardUserDefaults().synchronize()
+        self.navigationController?.popViewControllerAnimated(true)
     }
 
 }

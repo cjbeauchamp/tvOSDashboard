@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder.AppleTV.Storyboard" version="3.0" toolsVersion="9532" systemVersion="15D21" targetRuntime="AppleTV" propertyAccessControl="none" useAutolayout="YES" initialViewController="XPK-hn-LZg">
+<document type="com.apple.InterfaceBuilder.AppleTV.Storyboard" version="3.0" toolsVersion="10116" systemVersion="15E65" targetRuntime="AppleTV" propertyAccessControl="none" useAutolayout="YES" initialViewController="XPK-hn-LZg">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9530"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
     </dependencies>
     <scenes>
@@ -122,11 +122,13 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="Afy-9Z-xk5"/>
+                    <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+                    <size key="freeformSize" width="1920" height="1080"/>
                     <connections>
                         <outlet property="carrierChart" destination="Wno-9m-bUQ" id="00p-gm-OJb"/>
                         <outlet property="dauChart" destination="CQj-Jk-Aga" id="H1L-nq-4qQ"/>
                         <outlet property="exceptionChart" destination="taj-AW-k71" id="O3p-aD-Fiz"/>
-                        <outlet property="timeLabel" destination="xo8-hZ-g8P" id="38L-Q9-wFm"/>
+                        <outlet property="timeLabel" destination="xo8-hZ-g8P" id="pyn-C4-0tS"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -179,13 +181,7 @@
                                 <fontDescription key="fontDescription" style="UICTFontTextStyleHeadline"/>
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="API Key" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Qu0-un-z0p">
-                                <rect key="frame" x="650" y="356" width="112" height="37"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="24"/>
-                                <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <textField opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Enter your API Key" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="RPL-M6-F5s">
+                            <textField opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Enter your Access Token" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="RPL-M6-F5s">
                                 <rect key="frame" x="650" y="401" width="620" height="46"/>
                                 <fontDescription key="fontDescription" style="UICTFontTextStyleHeadline"/>
                                 <textInputTraits key="textInputTraits"/>
@@ -195,14 +191,20 @@
                                 <inset key="contentEdgeInsets" minX="40" minY="20" maxX="40" maxY="20"/>
                                 <state key="normal" title="Save Settings"/>
                                 <connections>
-                                    <action selector="saveSettings:" destination="G1H-CY-WF7" eventType="primaryActionTriggered" id="0V2-i9-gPg"/>
+                                    <action selector="saveSettings:" destination="G1H-CY-WF7" eventType="primaryActionTriggered" id="Rvh-r6-UaL"/>
                                 </connections>
                             </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Access Token" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Qu0-un-z0p">
+                                <rect key="frame" x="650" y="356" width="147" height="37"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                     </view>
                     <connections>
-                        <outlet property="apiKeyLabel" destination="RPL-M6-F5s" id="Yi3-p3-dJY"/>
-                        <outlet property="appIdLabel" destination="Xff-6D-aoA" id="bpV-pf-IAV"/>
+                        <outlet property="accessTokenField" destination="RPL-M6-F5s" id="NWW-bs-zyk"/>
+                        <outlet property="appIdField" destination="Xff-6D-aoA" id="rpj-OY-WtX"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ffc-p9-mdo" userLabel="First Responder" sceneMemberID="firstResponder"/>

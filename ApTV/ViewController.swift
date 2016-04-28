@@ -16,191 +16,64 @@ class ViewController: UIViewController {
     @IBOutlet weak var carrierChart: PieChartView!
     @IBOutlet weak var timeLabel: UILabel!
     
-    var sessionConfig:NSURLSessionConfiguration!
-    var session:NSURLSession!
-    
-    var appID:String = "" // demo with carrier
-    var accessToken:String = "" // demo
-    
-    var months: [String]!
     var exceptionData:NSArray = []
     var crashData:NSArray = []
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.sessionConfig = NSURLSessionConfiguration.defaultSessionConfiguration()
-        self.sessionConfig.HTTPAdditionalHeaders = ["Authorization": "Bearer " + self.accessToken]
-        self.session = NSURLSession(configuration: self.sessionConfig)
+        self.dauChart.noDataText = "Data not available"
+        self.exceptionChart.noDataText = "Data not available"
 
-        NSTimer.scheduledTimerWithTimeInterval(1, target:self, selector: Selector("updateTime"), userInfo: nil, repeats: true)
+        Helper.styleLineChart(self.dauChart)
+        Helper.styleLineChart(self.exceptionChart)
+        Helper.stylePieChart(self.carrierChart)
 
-        enum JSONError: String, ErrorType {
-            case NoData = "ERROR: no data"
-            case ConversionFailed = "ERROR: conversion from JSON failed"
+        NSTimer.scheduledTimerWithTimeInterval(1, target:self, selector: #selector(ViewController.updateTime), userInfo: nil, repeats: true)
+        NSTimer.scheduledTimerWithTimeInterval(60*60, target:self, selector: #selector(ViewController.updateData), userInfo: nil, repeats: true)
+        
+        // call these, the timers wait until the interval completes to fire
+        self.updateTime()
+        self.updateData()
+    }
+
+    func updateTime() {
+        
+        let dateFormatter = NSDateFormatter()
+        dateFormatter.timeStyle = NSDateFormatterStyle.MediumStyle
+        dateFormatter.dateStyle = NSDateFormatterStyle.MediumStyle
+        
+        timeLabel.text = dateFormatter.stringFromDate(NSDate())
+    }
+
+    func updateData() {
+                
+        let appID:String = NSUserDefaults.standardUserDefaults().objectForKey("appID") as! String
+        
+        Helper.getData("https://developers.crittercism.com:443/v1.0/"+appID+"/trends/dau", method: "GET", params: nil) { (json) -> Void in
+            self.drawDAUChart(json as! NSDictionary)
         }
         
+        Helper.getData("https://developers.crittercism.com:443/v1.0/app/"+appID+"/crash/counts", method: "GET", params: nil) { (json) -> Void in
+            self.crashData = json as! NSArray
+            self.updateErrorChart()
+        }
         
-        self.dauChart.xAxis.labelPosition = ChartXAxis.XAxisLabelPosition.Bottom
-        self.dauChart.xAxis.labelFont = NSUIFont(name: "HelveticaNeue-Light", size: 14.0)!
-        self.dauChart.xAxis.labelTextColor = UIColor.whiteColor()
-        self.dauChart.xAxis.drawAxisLineEnabled = false
-        self.dauChart.xAxis.drawGridLinesEnabled = false
-        
-        self.dauChart.leftAxis.labelFont = NSUIFont(name: "HelveticaNeue-Light", size: 14.0)!
-        self.dauChart.leftAxis.labelTextColor = UIColor.whiteColor()
-        self.dauChart.leftAxis.drawAxisLineEnabled = false
-        self.dauChart.rightAxis.drawAxisLineEnabled = false
-        
-        self.dauChart.legend.form = ChartLegend.ChartLegendForm.Line
-        self.dauChart.legend.font = NSUIFont(name: "HelveticaNeue-Light", size: 14.0)!
-        self.dauChart.legend.textColor = UIColor.whiteColor()
-        self.dauChart.legend.position = ChartLegend.ChartLegendPosition.BelowChartCenter
+        Helper.getData("https://developers.crittercism.com:443/v1.0/app/"+appID+"/exception/counts", method: "GET", params: nil) { (json) -> Void in
+            self.exceptionData = json as! NSArray
+            self.updateErrorChart()
+        }
 
         
-        
-        
-        self.exceptionChart.xAxis.labelPosition = ChartXAxis.XAxisLabelPosition.Bottom
-        self.exceptionChart.xAxis.labelFont = NSUIFont(name: "HelveticaNeue-Light", size: 14.0)!
-        self.exceptionChart.xAxis.labelTextColor = UIColor.whiteColor()
-        self.exceptionChart.xAxis.drawAxisLineEnabled = false
-        self.exceptionChart.xAxis.drawGridLinesEnabled = false
-        
-        self.exceptionChart.leftAxis.labelFont = NSUIFont(name: "HelveticaNeue-Light", size: 14.0)!
-        self.exceptionChart.leftAxis.labelTextColor = UIColor.whiteColor()
-        self.exceptionChart.leftAxis.drawAxisLineEnabled = false
-        self.exceptionChart.rightAxis.drawAxisLineEnabled = false
-
-        self.exceptionChart.legend.form = ChartLegend.ChartLegendForm.Line
-        self.exceptionChart.legend.font = NSUIFont(name: "HelveticaNeue-Light", size: 14.0)!
-        self.exceptionChart.legend.textColor = UIColor.whiteColor()
-        self.exceptionChart.legend.position = ChartLegend.ChartLegendPosition.BelowChartCenter
-
-        
-        
-        self.carrierChart.noDataText = "Data not available"
-        self.carrierChart.legend.enabled = false
-//        self.carrierChart.legend.form = ChartLegend.ChartLegendForm.Line
-//        self.carrierChart.legend.font = NSUIFont(name: "HelveticaNeue-Light", size: 14.0)!
-//        self.carrierChart.legend.textColor = UIColor.whiteColor()
-//        self.carrierChart.legend.position = ChartLegend.ChartLegendPosition.BelowChartCenter
-        
-        self.carrierChart.holeRadiusPercent = 0.3
-        self.carrierChart.transparentCircleRadiusPercent = 0.35
-        self.carrierChart.holeColor = UIColor.blackColor()
-        self.carrierChart.transparentCircleColor = UIColor.blackColor().colorWithAlphaComponent(0.6)
-        
-        
-        self.getUserData()
-        self.getCarrierData()
-        self.getExceptionData()
-        self.getCrashData()
-    }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+        let pmParams:Dictionary = [ "params": [ "appId": appID, "graph": "volume", "duration":60, "groupBy":"carrier" ]]
+        Helper.getData("https://developers.crittercism.com:443/v1.0/performanceManagement/pie", method: "POST", params: pmParams, callback: { (json) -> Void in
+            self.drawCarrierChart(json as! NSDictionary)
+        })
     }
     
-    func getCarrierData() {
-        let endpoint = NSURL(string: "https://developers.crittercism.com:443/v1.0/performanceManagement/pie")
-        let request = NSMutableURLRequest(URL:endpoint!)
-        request.HTTPMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("application/json", forHTTPHeaderField: "Accept")
-        
-        let params:Dictionary = [ "params": [ "appId": self.appID, "graph": "volume", "duration":60, "groupBy":"carrier" ]]
-        
-        do {
-            try request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options:NSJSONWritingOptions.init(rawValue: 0))
-        } catch { print("Error paraming", error) }
-        
-        self.session.dataTaskWithRequest(request) { (data, response, error) -> Void in
-            
-            do {
-                guard let dat = data else { throw NSError(domain: "com.apteligent.JSON", code: 1, userInfo: nil) }
-                guard let json = try NSJSONSerialization.JSONObjectWithData(dat, options: []) as? NSDictionary else { throw NSError(domain: "com.apteligent.JSON", code: 2, userInfo: nil) }
-                
-                // we want to make sure this is run on the proper thread
-                dispatch_async(dispatch_get_main_queue(),{
-                    self.drawCarrierChart(json)
-                })
-                
-            } catch {
-                print("Error", error)
-            }
-        }.resume()
-    }
-    
-    func getUserData() {
-        let endpoint = NSURL(string: "https://developers.crittercism.com:443/v1.0/"+self.appID+"/trends/dau")
-        let request = NSMutableURLRequest(URL:endpoint!)
-        self.session.dataTaskWithRequest(request) { (data, response, error) -> Void in
-            
-            do {
-                guard let dat = data else { throw NSError(domain: "com.apteligent.JSON", code: 1, userInfo: nil) }
-                guard let json = try NSJSONSerialization.JSONObjectWithData(dat, options: []) as? NSDictionary else { throw NSError(domain: "com.apteligent.JSON", code: 2, userInfo: nil) }
-                
-                // we want to make sure this is run on the proper thread
-                dispatch_async(dispatch_get_main_queue(),{
-                    self.drawDAUChart(json)
-                })
-                
-            } catch {
-                print("Error", error)
-            }
-            }.resume()
-    }
-    
-    func getExceptionData() {
-        
-        let endpoint = NSURL(string: "https://developers.crittercism.com:443/v1.0/app/"+self.appID+"/crash/counts")
-        let request = NSMutableURLRequest(URL:endpoint!)
-        
-        self.session.dataTaskWithRequest(request) { (data, response, error) -> Void in
-            
-            do {
-                
-                guard let dat = data else { throw NSError(domain: "com.apteligent.JSON", code: 1, userInfo: nil) }
-                guard let json = try NSJSONSerialization.JSONObjectWithData(dat, options: []) as? NSArray else { throw NSError(domain: "com.apteligent.JSON", code: 2, userInfo: nil) }
-                
-                // we want to make sure this is run on the proper thread
-                dispatch_async(dispatch_get_main_queue(),{
-                    self.crashData = json
-                    self.updateErrorChart()
-                })
-                
-            } catch {
-                print("Error", error)
-            }
-            }.resume()
-    }
-    
-    func getCrashData() {
-        let endpoint = NSURL(string: "https://developers.crittercism.com:443/v1.0/app/"+self.appID+"/exception/counts")
-        let request = NSMutableURLRequest(URL:endpoint!)
-        self.session.dataTaskWithRequest(request) { (data, response, error) -> Void in
-            
-            do {
-                guard let dat = data else { throw NSError(domain: "com.apteligent.JSON", code: 1, userInfo: nil) }
-                guard let json = try NSJSONSerialization.JSONObjectWithData(dat, options: []) as? NSArray else { throw NSError(domain: "com.apteligent.JSON", code: 2, userInfo: nil) }
-                
-                // we want to make sure this is run on the proper thread
-                dispatch_async(dispatch_get_main_queue(),{
-                    self.exceptionData = json
-                    self.updateErrorChart()
-                })
-                
-            } catch {
-                print("Error", error)
-            }
-            }.resume()
-    }
     
     func updateErrorChart() {
         
-        self.exceptionChart.noDataText = "Data not available"
-
         var exceptionDataEntries: [ChartDataEntry] = []
         var crashDataEntries: [ChartDataEntry] = []
         var dates: [String] = []
@@ -212,34 +85,22 @@ class ViewController: UIViewController {
             for i in 00..<self.exceptionData.count {
                 
                 let bucketData:NSDictionary = self.exceptionData[i] as AnyObject! as! NSDictionary
+                print(bucketData)
                 let value:Int = bucketData["value"] as AnyObject! as! Int
                 let dateString:String = bucketData["date"] as AnyObject! as! String
-                
-                // convert the start string into an nsdate
-                let dateFormatter = NSDateFormatter()
-                dateFormatter.dateFormat = "yyyy'-'MM'-'dd'"
-                let date:NSDate = dateFormatter.dateFromString(dateString)!
-                
-                dateFormatter.dateFormat = "MM/dd"
-                let newDateString = dateFormatter.stringFromDate(date)
+                let formattedString:String = Helper.formatDateString(dateString, format:"yyyy'-'MM'-'dd'")
                 
                 let dataEntry = ChartDataEntry(value: Double(value), xIndex: i)
                 
-                if !dates.contains(newDateString) {
-                    dates.append(newDateString)
+                if !dates.contains(formattedString) {
+                    dates.append(formattedString)
                 }
                 
                 exceptionDataEntries.append(dataEntry)
             }
             
-            let exceptionSet = LineChartDataSet(yVals: exceptionDataEntries, label: "Exceptions")
-            exceptionSet.setColor(UIColor.orangeColor())
-            exceptionSet.setCircleColor(UIColor.orangeColor())
-            exceptionSet.drawCircleHoleEnabled = false
-            exceptionSet.fillColor = UIColor.redColor()
-            exceptionSet.lineWidth = 5.0
-            exceptionSet.circleRadius = 0
-            exceptionSet.drawValuesEnabled = false
+            var exceptionSet = LineChartDataSet(yVals: exceptionDataEntries, label: "Exceptions")
+            Helper.formatDataSet(&exceptionSet, color: UIColor.orangeColor())
 
             dataSets.append(exceptionSet)
         }
@@ -249,46 +110,33 @@ class ViewController: UIViewController {
             for i in 00..<self.crashData.count {
                 
                 let bucketData:NSDictionary = self.crashData[i] as AnyObject! as! NSDictionary
+                print(bucketData)
                 let value:Int = bucketData["value"] as AnyObject! as! Int
+                
                 let dateString:String = bucketData["date"] as AnyObject! as! String
-                
-                // convert the start string into an nsdate
-                let dateFormatter = NSDateFormatter()
-                dateFormatter.dateFormat = "yyyy'-'MM'-'dd'"
-                let date:NSDate = dateFormatter.dateFromString(dateString)!
-                
-                dateFormatter.dateFormat = "MM/dd"
-                let newDateString = dateFormatter.stringFromDate(date)
+                let formattedString:String = Helper.formatDateString(dateString, format: "yyyy'-'MM'-'dd'")
                 
                 let dataEntry = ChartDataEntry(value: Double(value), xIndex: i)
                 
-                if !dates.contains(newDateString) {
-                    dates.append(newDateString)
+                if !dates.contains(formattedString) {
+                    dates.append(formattedString)
                 }
 
                 crashDataEntries.append(dataEntry)
             }
 
             
-            let crashSet = LineChartDataSet(yVals: crashDataEntries, label: "Crashes")
-            crashSet.setColor(UIColor(red: 237/255, green: 72/255, blue: 67/255, alpha: 255/255))
-            crashSet.setCircleColor(UIColor(red: 237/255, green: 72/255, blue: 67/255, alpha: 255/255))
-            crashSet.drawCircleHoleEnabled = false
-            crashSet.fillColor = UIColor.redColor()
-            crashSet.lineWidth = 5.0
-            crashSet.circleRadius = 0
-            crashSet.drawValuesEnabled = false
+            var crashSet = LineChartDataSet(yVals: crashDataEntries, label: "Crashes")
+            let setColor = UIColor(red: 237/255, green: 72/255, blue: 67/255, alpha: 255/255)
+            Helper.formatDataSet(&crashSet, color: setColor)
 
             dataSets.append(crashSet)
         }
         
-        
-        let chartData = LineChartData(xVals: dates, dataSets: dataSets)
-        self.exceptionChart.data = chartData
+        self.exceptionChart.data = LineChartData(xVals: dates, dataSets: dataSets)
     }
     
     func drawDAUChart(jsonDict: NSDictionary) {
-        dauChart.noDataText = "Data not available"
         
         let series:NSDictionary = jsonDict["series"] as AnyObject! as! NSDictionary
         let buckets:NSArray = series["buckets"] as AnyObject! as! NSArray
@@ -298,41 +146,27 @@ class ViewController: UIViewController {
         
         for i in 0..<buckets.count {
             let bucketData:NSDictionary = buckets[i] as AnyObject! as! NSDictionary
+            print(bucketData)
             let value:Int = bucketData["value"] as AnyObject! as! Int
             let dateString:String = bucketData["start"] as AnyObject! as! String
-            
-            // convert the start string into an nsdate
-            let dateFormatter = NSDateFormatter()
-            dateFormatter.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ"
-            let date:NSDate = dateFormatter.dateFromString(dateString)!
-            
-            dateFormatter.dateFormat = "MM/dd"
-            let newDateString = dateFormatter.stringFromDate(date)
+            print(dateString)
+            let formattedString:String = Helper.formatDateString(dateString, format: "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ")
             
             let dataEntry = ChartDataEntry(value: Double(value), xIndex: i)
             
-            dates.append(newDateString)
+            dates.append(formattedString)
             dataEntries.append(dataEntry)
         }
         
-        let chartDataSet = LineChartDataSet(yVals: dataEntries, label: "Active Users")
+        var chartDataSet = LineChartDataSet(yVals: dataEntries, label: "Active Users")
+        let dataColor = UIColor(red: 72/255, green: 186/255, blue: 175/255, alpha: 255/255)
         
-        chartDataSet.setColor(UIColor(red: 72/255, green: 186/255, blue: 175/255, alpha: 255/255))
-        chartDataSet.setCircleColor(UIColor(red: 72/255, green: 186/255, blue: 175/255, alpha: 255/255))
-        chartDataSet.drawCircleHoleEnabled = false
-        chartDataSet.fillColor = UIColor.redColor()
-        chartDataSet.lineWidth = 5.0
-        chartDataSet.circleRadius = 0
-        chartDataSet.drawValuesEnabled = false
+        Helper.formatDataSet(&chartDataSet, color: dataColor)
         
-        let chartData = LineChartData(xVals: dates, dataSet: chartDataSet)
-        
-        dauChart.data = chartData
+        dauChart.data = LineChartData(xVals: dates, dataSet: chartDataSet)
     }
     
     func drawCarrierChart(jsonDict: NSDictionary) {
-        
-        
         
         let series:NSDictionary = jsonDict["data"] as AnyObject! as! NSDictionary
         let buckets:NSArray = series["slices"] as AnyObject! as! NSArray
@@ -346,6 +180,7 @@ class ViewController: UIViewController {
         for i in 0..<buckets.count {
             
             let bucketData:NSDictionary = buckets[i] as AnyObject! as! NSDictionary
+            print(bucketData)
             let value:Int = bucketData["value"] as AnyObject! as! Int
             let carrierString:String = bucketData["label"] as AnyObject! as! String
             processedData[carrierString] = value
@@ -357,9 +192,6 @@ class ViewController: UIViewController {
             let obj2 = processedData[$1] // get ob associated w/ key 2
             return obj1 > obj2
         }
-        
-        print(processedData)
-        print(sortedKeys)
 
         // now we want to make sure we only have a max 5 keys
         for i in 0..<5 {
@@ -384,30 +216,10 @@ class ViewController: UIViewController {
         }
 
         
-        let chartDataSet = PieChartDataSet(yVals: dataEntries, label: "Carriers")
-        chartDataSet.sliceSpace = 2.0
-        chartDataSet.drawValuesEnabled = false
-        chartDataSet.colors = [
-            UIColor(red: 72/255, green: 186/255, blue: 175/255, alpha: 255/255),
-            UIColor(red: 237/255, green: 72/255, blue: 67/255, alpha: 255/255),
-            UIColor(red: 198/255, green: 96/255, blue: 187/255, alpha: 255/255),
-            UIColor(red: 66/255, green: 199/255, blue: 111/255, alpha: 255/255),
-            UIColor(red: 67/255, green: 163/255, blue: 237/255, alpha: 255/255),
-            UIColor.orangeColor(),
-        ]
+        var chartDataSet = PieChartDataSet(yVals: dataEntries, label: "Carriers")
+        Helper.formatPieData(&chartDataSet)
         
-        let chartData = PieChartData(xVals: carriers, dataSet: chartDataSet)
-        
-        self.carrierChart.data = chartData
-    }
-    
-    func updateTime() {
-        
-        let dateFormatter = NSDateFormatter()
-        dateFormatter.timeStyle = NSDateFormatterStyle.MediumStyle
-        dateFormatter.dateStyle = NSDateFormatterStyle.MediumStyle
-        
-        timeLabel.text = dateFormatter.stringFromDate(NSDate())
+        self.carrierChart.data = PieChartData(xVals: carriers, dataSet: chartDataSet)
     }
 }
 
