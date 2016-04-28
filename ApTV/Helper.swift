@@ -61,14 +61,21 @@ class Helper:NSObject {
         ]
     }
     
+    static func parseBucket(bucket:AnyObject, valueKey:String, dateKey:String, dateFormat:String) -> (value:Int, dateString:String) {
+        let bucketData:NSDictionary = bucket as AnyObject! as! NSDictionary
+        let value:Int = bucketData[valueKey] as AnyObject! as! Int
+        
+        let dateString:String = bucketData[dateKey] as AnyObject! as! String
+        let formattedString:String = Helper.formatDateString(dateString, format: dateFormat)
+
+        return (value:value, dateString:formattedString)
+    }
+    
     static func formatDateString(dateString:String, format:String) -> String {
         // convert the start string into an nsdate
         let dateFormatter = NSDateFormatter()
         dateFormatter.dateFormat = format
-        print(dateFormatter)
-        print(dateString)
         let date:NSDate = dateFormatter.dateFromString(dateString)!
-        
         dateFormatter.dateFormat = "MM/dd"
         return dateFormatter.stringFromDate(date)
     }

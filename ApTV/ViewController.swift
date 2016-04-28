@@ -84,16 +84,12 @@ class ViewController: UIViewController {
         if(self.exceptionData.count > 0) {
             for i in 00..<self.exceptionData.count {
                 
-                let bucketData:NSDictionary = self.exceptionData[i] as AnyObject! as! NSDictionary
-                print(bucketData)
-                let value:Int = bucketData["value"] as AnyObject! as! Int
-                let dateString:String = bucketData["date"] as AnyObject! as! String
-                let formattedString:String = Helper.formatDateString(dateString, format:"yyyy'-'MM'-'dd'")
+                let tupleValue = Helper.parseBucket(self.exceptionData[i], valueKey: "value", dateKey: "date", dateFormat: "yyyy'-'MM'-'dd'")
                 
-                let dataEntry = ChartDataEntry(value: Double(value), xIndex: i)
+                let dataEntry = ChartDataEntry(value: Double(tupleValue.value), xIndex: i)
                 
-                if !dates.contains(formattedString) {
-                    dates.append(formattedString)
+                if !dates.contains(tupleValue.dateString) {
+                    dates.append(tupleValue.dateString)
                 }
                 
                 exceptionDataEntries.append(dataEntry)
@@ -109,17 +105,12 @@ class ViewController: UIViewController {
         if(self.crashData.count > 0) {
             for i in 00..<self.crashData.count {
                 
-                let bucketData:NSDictionary = self.crashData[i] as AnyObject! as! NSDictionary
-                print(bucketData)
-                let value:Int = bucketData["value"] as AnyObject! as! Int
+                let tupleValue = Helper.parseBucket(self.crashData[i], valueKey: "value", dateKey: "date", dateFormat: "yyyy'-'MM'-'dd'")
                 
-                let dateString:String = bucketData["date"] as AnyObject! as! String
-                let formattedString:String = Helper.formatDateString(dateString, format: "yyyy'-'MM'-'dd'")
+                let dataEntry = ChartDataEntry(value: Double(tupleValue.value), xIndex: i)
                 
-                let dataEntry = ChartDataEntry(value: Double(value), xIndex: i)
-                
-                if !dates.contains(formattedString) {
-                    dates.append(formattedString)
+                if !dates.contains(tupleValue.dateString) {
+                    dates.append(tupleValue.dateString)
                 }
 
                 crashDataEntries.append(dataEntry)
@@ -145,16 +136,12 @@ class ViewController: UIViewController {
         var dates: [String] = []
         
         for i in 0..<buckets.count {
-            let bucketData:NSDictionary = buckets[i] as AnyObject! as! NSDictionary
-            print(bucketData)
-            let value:Int = bucketData["value"] as AnyObject! as! Int
-            let dateString:String = bucketData["start"] as AnyObject! as! String
-            print(dateString)
-            let formattedString:String = Helper.formatDateString(dateString, format: "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ")
+
+            let tupleValue = Helper.parseBucket(buckets[i], valueKey: "value", dateKey: "start", dateFormat: "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ")
+
+            let dataEntry = ChartDataEntry(value: Double(tupleValue.value), xIndex: i)
             
-            let dataEntry = ChartDataEntry(value: Double(value), xIndex: i)
-            
-            dates.append(formattedString)
+            dates.append(tupleValue.dateString)
             dataEntries.append(dataEntry)
         }
         
@@ -178,9 +165,7 @@ class ViewController: UIViewController {
         // pre-process and sort our data
         var processedData:Dictionary = [ "other": 0 ]
         for i in 0..<buckets.count {
-            
             let bucketData:NSDictionary = buckets[i] as AnyObject! as! NSDictionary
-            print(bucketData)
             let value:Int = bucketData["value"] as AnyObject! as! Int
             let carrierString:String = bucketData["label"] as AnyObject! as! String
             processedData[carrierString] = value
