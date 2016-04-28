@@ -90,6 +90,49 @@ class ViewController: UIViewController {
             self.drawCarrierChart(json as! NSDictionary)
         })
     }
+
+    // parses the data received from the DAU
+    // APIs and renders the data in the dauChart view
+    func drawDAUChart(jsonDict: NSDictionary) {
+        
+        // some holders for our data as we parse and sort it
+        var dataEntries: [ChartDataEntry] = [] // y-values
+        var dates: [String] = [] // x-values
+
+        // extract the buckets from the JSON
+        let series:NSDictionary = jsonDict["series"] as AnyObject! as! NSDictionary
+        let buckets:NSArray = series["buckets"] as AnyObject! as! NSArray
+        
+        // iterate through the buckets
+        for i in 0..<buckets.count {
+
+            // parse the json item. returns a tuple of the form
+            // (value, dateString) where value == dau count
+            // and dateString == the date of the given dau count.
+            // think of them as y and x values respectively
+            let parsedData = Helper.parseBucket(buckets[i], valueKey: "value", dateKey: "start", dateFormat: "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ")
+
+            // create an object for the charts library to process the info.
+            // each dataEntry represents an x-y point on the chart
+            let dataEntry = ChartDataEntry(value: Double(parsedData.value), xIndex: i)
+            dataEntries.append(dataEntry)
+            
+            // add the x-value to the data set
+            dates.append(parsedData.dateString)
+        }
+        
+        // create the final object for the chart library to use
+        var chartDataSet = LineChartDataSet(yVals: dataEntries, label: "Active Users")
+
+        // do some styling and formatting of the chart
+        let dataColor = UIColor(red: 72/255, green: 186/255, blue: 175/255, alpha: 255/255)
+        Helper.formatDataSet(&chartDataSet, color: dataColor)
+        
+        // set the chart data to our newly created data series, which will draw
+        // the chart itself using the passed-in data
+        dauChart.data = LineChartData(xVals: dates, dataSet: chartDataSet)
+    }
+    
     
     // parses the data received from the exception & crash
     // APIs and renders the data in the exceptionChart view
@@ -135,8 +178,8 @@ class ViewController: UIViewController {
             
             // do some styling and formatting of the chart
             Helper.formatDataSet(&exceptionSet, color: UIColor.orangeColor())
-
-            // add the data set to the chart (this will be the complete exception set, 
+            
+            // add the data set to the chart (this will be the complete exception set,
             // or one full line on the chart)
             dataSets.append(exceptionSet)
         }
@@ -145,7 +188,7 @@ class ViewController: UIViewController {
         // remember these are loaded asynchronously so you may
         // have exceptionData but no crashData
         if(self.crashData.count > 0) {
-
+            
             // iterate each object in the json
             for i in 00..<self.crashData.count {
                 
@@ -165,18 +208,18 @@ class ViewController: UIViewController {
                 if !dates.contains(parsedData.dateString) {
                     dates.append(parsedData.dateString)
                 }
-
+                
                 // add this data point to the current set
                 crashDataEntries.append(dataEntry)
             }
-
+            
             // create the final object for the chart library to use
             var crashSet = LineChartDataSet(yVals: crashDataEntries, label: "Crashes")
-
+            
             // do some styling and formatting of the chart
             let setColor = UIColor(red: 237/255, green: 72/255, blue: 67/255, alpha: 255/255)
             Helper.formatDataSet(&crashSet, color: setColor)
-
+            
             // add the data set to the chart (this will be the complete exception set,
             // or one full line on the chart)
             dataSets.append(crashSet)
@@ -187,48 +230,6 @@ class ViewController: UIViewController {
         self.exceptionChart.data = LineChartData(xVals: dates, dataSets: dataSets)
     }
 
-    // parses the data received from the DAU
-    // APIs and renders the data in the dauChart view
-    func drawDAUChart(jsonDict: NSDictionary) {
-        
-        // some holders for our data as we parse and sort it
-        var dataEntries: [ChartDataEntry] = [] // y-values
-        var dates: [String] = [] // x-values
-
-        // extract the buckets from the JSON
-        let series:NSDictionary = jsonDict["series"] as AnyObject! as! NSDictionary
-        let buckets:NSArray = series["buckets"] as AnyObject! as! NSArray
-        
-        // iterate through the buckets
-        for i in 0..<buckets.count {
-
-            // parse the json item. returns a tuple of the form
-            // (value, dateString) where value == dau count
-            // and dateString == the date of the given dau count.
-            // think of them as y and x values respectively
-            let parsedData = Helper.parseBucket(buckets[i], valueKey: "value", dateKey: "start", dateFormat: "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ")
-
-            // create an object for the charts library to process the info.
-            // each dataEntry represents an x-y point on the chart
-            let dataEntry = ChartDataEntry(value: Double(parsedData.value), xIndex: i)
-            dataEntries.append(dataEntry)
-            
-            // add the x-value to the data set
-            dates.append(parsedData.dateString)
-        }
-        
-        // create the final object for the chart library to use
-        var chartDataSet = LineChartDataSet(yVals: dataEntries, label: "Active Users")
-
-        // do some styling and formatting of the chart
-        let dataColor = UIColor(red: 72/255, green: 186/255, blue: 175/255, alpha: 255/255)
-        Helper.formatDataSet(&chartDataSet, color: dataColor)
-        
-        // set the chart data to our newly created data series, which will draw
-        // the chart itself using the passed-in data
-        dauChart.data = LineChartData(xVals: dates, dataSet: chartDataSet)
-    }
-    
     // parses the data received from the Service Monitoring
     // APIs and renders the data in the carrierChart view
     func drawCarrierChart(jsonDict: NSDictionary) {
