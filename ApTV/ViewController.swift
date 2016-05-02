@@ -321,7 +321,7 @@ class ViewController: UIViewController {
     }
 
     
-    /* START SECONDARY FUNCTIONS */
+    /* START HELPER FUNCTIONS */
     
     
     // called after the lineChart object is initialized,
